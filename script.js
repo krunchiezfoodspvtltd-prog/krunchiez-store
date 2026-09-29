@@ -413,10 +413,50 @@ document.addEventListener("DOMContentLoaded", function () {
           "TOTAL: ₹" + getTotal()
         );
 
-        window.location.href =
-          "mailto:krunchiezfoodspvt.ltd@gmail.com" +
-          "?subject=" + subject +
-          "&body=" + body;
+       fetch("https://krunchiez-backend.krunchiezfoodspvt-ltd.workers.dev/create-order", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    customer: {
+      name: name,
+      phone: phone,
+      address: address
+    },
+    items: cart,
+    total: getTotal()
+  })
+})
+.then(function(response) {
+  return response.json();
+})
+.then(function(data) {
+
+  if (data.success) {
+
+    alert("Order received by Krunchiez! 🎉");
+
+    cart = [];
+    saveCart();
+    renderCart();
+
+    modal.remove();
+
+  } else {
+
+    alert("Something went wrong. Please try again.");
+
+  }
+
+})
+.catch(function(error) {
+
+  console.error("Order error:", error);
+
+  alert("Could not connect to Krunchiez server.");
+
+});
 
       }
     );
