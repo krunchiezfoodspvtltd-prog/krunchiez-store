@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Krunchiez Admin Orders</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+    }
+
+    header {
+      background: #ffd21c;
+      color: #111;
+      padding: 20px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+    }
+
+    .container {
+      padding: 20px;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .login-box {
+      max-width: 450px;
+      margin: 60px auto;
+      background: #222;
+      padding: 25px;
+      border-radius: 15px;
+    }
+
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 13px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: 1px solid #555;
+      background: #111;
+      color: white;
+    }
+
+    button {
+      background: #ffd21c;
+      color: #111;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      gap: 10px;
+    }
+
+    .orders {
+      display: grid;
+      gap: 15px;
+    }
+
+    .order {
+      background: #222;
+      border-radius: 15px;
+      padding: 20px;
+      border-left: 5px solid #ffd21c;
+    }
+
+    .order h3 {
+      margin-top: 0;
+      color: #ffd21c;
+    }
+
+    .order p {
+      margin: 7px 0;
+      word-break: break-word;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 5px 9px;
+      border-radius: 6px;
+      background: #333;
+      margin-right: 5px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .error {
+      color: #ff7777;
+      margin-top: 10px;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 40px;
+      background: #222;
+      border-radius: 15px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>🍿 Krunchiez Admin</h1>
+  <p>Orders Dashboard</p>
+</header>
+
+<div class="container">
+
+  <div id="loginBox" class="login-box">
+    <h2>Admin Login 🔐</h2>
+
+    <p>Enter your Admin Key.</p>
+
+    <input
+      type="password"
+      id="adminKey"
+      placeholder="Enter Admin Key"
+    >
+
+    <button onclick="loadOrders()">
+      View Orders
+    </button>
+
+    <div id="error" class="error"></div>
+  </div>
+
+  <div id="dashboard" class="hidden">
+
+    <div class="topbar">
+      <h2>Orders</h2>
+
+      <button onclick="loadOrders()">
+        🔄 Refresh
+      </button>
+    </div>
+
+    <div id="orders" class="orders"></div>
+
+  </div>
+
+</div>
+
+<script>
+
+const WORKER_URL =
+  "https://krunchiez-backend.krunchiezfoodspvt-ltd.workers.dev";
+
+async function loadOrders() {
+
+  const key =
+    document.getElementById("adminKey").value;
+
+  const error =
+    document.getElementById("error");
+
+  if (!key) {
+    error.textContent =
+      "Please enter your Admin Key.";
+    return;
+  }
+
+  error.textContent = "";
+
+  try {
+
+    const response =
+      await fetch(
+        WORKER_URL + "/admin/orders",
+        {
+          method: "GET",
+          headers: {
+            "X-Admin-Key": key
+          }
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if (!response.ok || !data.success) {
+
+      error.textContent =
+        "Invalid Admin Key or server error.";
+
+      return;
+    }
+
+    document
+      .getElementById("loginBox")
+      .classList.add("hidden");
+
+    document
+      .getElementById("dashboard")
+      .classList.remove("hidden");
+
+    displayOrders(data.orders);
+
+  } catch (err) {
+
+    error.textContent =
+      "Could not connect to the Krunchiez server.";
+
+    console.error(err);
+  }
+}
+
+
+function displayOrders(orders) {
+
+  const container =
+    document.getElementById("orders");
+
+  container.innerHTML = "";
+
+  if (!orders || orders.length === 0) {
+
+    container.innerHTML =
+      '<div class="empty">No orders yet 🍿</div>';
+
+    return;
+  }
+
+  orders.forEach(order => {
+
+    let items = "";
+
+    try {
+
+      const parsed =
+        JSON.parse(order.items);
+
+      items =
+        parsed.map(item =>
+          `${item.name || "Product"} × ${item.quantity || 1}`
+        ).join(", ");
+
+    } catch {
+
+      items = order.items;
+    }
+
+    const card =
+      document.createElement("div");
+
+    card.className = "order";
+
+    card.innerHTML = `
+      <h3>${escapeHTML(order.order_id)}</h3>
+
+      <p><strong>Customer:</strong>
+        ${escapeHTML(order.customer_name)}
+      </p>
+
+      <p><strong>Phone:</strong>
+        ${escapeHTML(order.customer_phone)}
+      </p>
+
+      <p><strong>Address:</strong>
+        ${escapeHTML(order.customer_address)}
+      </p>
+
+      <p><strong>Items:</strong>
+        ${escapeHTML(items)}
+      </p>
+
+      <p><strong>Total:</strong>
+        ₹${Number(order.total || 0)}
+      </p>
+
+      <p>
+        <span class="status">
+          Payment: ${escapeHTML(order.payment_status)}
+        </span>
+
+        <span class="status">
+          Order: ${escapeHTML(order.order_status)}
+        </span>
+      </p>
+
+      <p><strong>Time:</strong>
+        ${escapeHTML(order.created_at)}
+      </p>
+    `;
+
+    container.appendChild(card);
+
+  });
+}
+
+
+function escapeHTML(value) {
+
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+</script>
+
+</body>
+</html>
