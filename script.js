@@ -399,64 +399,66 @@ document.addEventListener("DOMContentLoaded", function () {
 
         }).join("\n");
 
-        const subject = encodeURIComponent(
-          "Krunchiez Order - " + name
-        );
+        fetch(
+          "https://krunchiez-backend.krunchiezfoodspvt-ltd.workers.dev/create-order",
+          {
+            method: "POST",
 
-        const body = encodeURIComponent(
-          "NEW KRUNCHIEZ ORDER\n\n" +
-          "Customer: " + name + "\n" +
-          "Phone: " + phone + "\n" +
-          "Address: " + address + "\n\n" +
-          "ORDER:\n" +
-          orderDetails + "\n\n" +
-          "TOTAL: ₹" + getTotal()
-        );
+            headers: {
+              "Content-Type": "application/json"
+            },
 
-       fetch("https://krunchiez-backend.krunchiezfoodspvt-ltd.workers.dev/create-order", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    customer: {
-      name: name,
-      phone: phone,
-      address: address
-    },
-    items: cart,
-    total: getTotal()
-  })
-})
-.then(function(response) {
-  return response.json();
-})
-.then(function(data) {
+            body: JSON.stringify({
+              customer: {
+                name: name,
+                phone: phone,
+                address: address
+              },
 
-  if (data.success) {
+              items: cart,
 
-    alert("Order received by Krunchiez! 🎉");
+              total: getTotal()
+            })
+          }
+        )
 
-    cart = [];
-    saveCart();
-    renderCart();
+        .then(function (response) {
+          return response.json();
+        })
 
-    modal.remove();
+        .then(function (data) {
 
-  } else {
+          if (data.success) {
 
-    alert("Something went wrong. Please try again.");
+            alert("Order received by Krunchiez! 🎉");
 
-  }
+            cart = [];
 
-})
-.catch(function(error) {
+            saveCart();
 
-  console.error("Order error:", error);
+            renderCart();
 
-  alert("Could not connect to Krunchiez server.");
+            modal.remove();
 
-});
+          } else {
+
+            alert(
+              "Something went wrong. Please try again."
+            );
+
+          }
+
+        })
+
+        .catch(function (error) {
+
+          console.error("Order error:", error);
+
+          alert(
+            "Could not connect to Krunchiez server."
+          );
+
+        });
 
       }
     );
